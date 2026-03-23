@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFlix Dashboard - Ionut</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; text-align: center; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 6px; background: #1a73e8; color: white; font-weight: bold; }
+        button:hover { background: #1557b0; }
+        .comment-card { border-left: 5px solid #1a73e8; background: #f8f9fa; padding: 15px; margin-bottom: 10px; border-radius: 4px; position: relative; }
+        .comment-card b { color: #333; display: block; margin-bottom: 5px; }
+        .comment-card small { color: #666; }
+        .btn-delete { background: #dc3545; font-size: 12px; padding: 5px 10px; position: absolute; right: 10px; top: 10px; }
+        .btn-delete:hover { background: #a71d2a; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>MFlix Comments Explorer</h1>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar por nombre (ej: Olenna)...">
+        <button onclick="buscarComentarios()">Buscar</button>
+        <button onclick="cargarComentarios()" style="background: #34a853;">Ver últimos</button>
+    </div>
+
+    <div id="lista-comentarios">
+        </div>
+</div>
+
+<script>
+    const API_URL = "http://192.168.221.31:8000";
+
+    // Función para LISTAR todos
+    async function cargarComentarios() {
+        try {
+            const response = await fetch(`${API_URL}/comentarios`);
+            const datos = await response.json();
+            renderizar(datos);
+        } catch (error) {
+            alert("Error al conectar con la API. ¿Está uvicorn corriendo?");
+        }
+    }
+
+    // Función para BUSCAR por nombre
+    async function buscarComentarios() {
+        const nombre = document.getElementById('searchInput').value;
+        if (!nombre) return cargarComentarios();
+
+        const response = await fetch(`${API_URL}/buscar/${nombre}`);
+        const datos = await response.json();
+        
+        // Si la API devuelve un mensaje de "No encontrado", mostramos lista vacía
+        if (datos.mensaje) {
+            document.getElementById('lista-comentarios').innerHTML = `<p>${datos.mensaje}</p>`;
+        } else {
+            renderizar(datos);
+        }
+    }
+
+    // Función para BORRAR
+    async function borrarComentario(id) {
+        if (!confirm("¿Seguro que quieres borrar este comentario?")) return;
+
+        const response = await fetch(`${API_URL}/borrar/${id}`, { method: 'DELETE' });
+        const resultado = await response.json();
+        
+        alert(resultado.mensaje || resultado.detail);
+        cargarComentarios(); // Recargar lista
+    }
+
+    // Función para dibujar los elementos en el HTML
+    function renderizar(lista) {
+        const contenedor = document.getElementById('lista-comentarios');
+        contenedor.innerHTML = ""; // Limpiar
+
+        lista.forEach(c => {
+            contenedor.innerHTML += `
+                <div class="comment-card">
+                    <b>👤 ${c.name} <small>(${c.email})</small></b>
+                    <p>${c.text}</p>
+                    <small>📅 ${c.date} | 🆔 ${c._id}</small>
+                    <button class="btn-delete" onclick="borrarComentario('${c._id}')">Borrar</button>
+                </div>
+            `;
+        });
+    }
+
+    // Cargar al iniciar la página
+    cargarComentarios();
+</script>
+
+</body>
+</html>
