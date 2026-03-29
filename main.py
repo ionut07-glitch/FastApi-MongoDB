@@ -79,13 +79,18 @@ def buscar_por_nombre(nombre: str):
 # BUSCAR POR ID: (Find One)
 @app.get("/buscar_id/{id_comentario}")
 def buscar_por_id(id_comentario: str):
+    # Primero validamos si el texto enviado es un ID real de MongoDB
+    if not ObjectId.is_valid(id_comentario):
+        raise HTTPException(status_code=400, detail="El texto enviado no tiene formato de ObjectId")
+
     try:
         resultado = collection.find_one({"_id": ObjectId(id_comentario)})
         if not resultado:
-            raise HTTPException(status_code=404, detail="ID no encontrado")
+            # Si entras aquí después de borrar, ¡felicidades! El borrado funcionó.
+            raise HTTPException(status_code=404, detail="El comentario ya no existe en la base de datos")
         return serializar(resultado)
-    except:
-        raise HTTPException(status_code=400, detail="Formato de ID no válido")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
 
 # CREAR: Nuevo comentario (POST)
 @app.post("/crear")
